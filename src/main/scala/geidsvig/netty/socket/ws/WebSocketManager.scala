@@ -7,6 +7,7 @@ import akka.actor.actorRef2Scala
 import akka.event.LoggingAdapter
 import geidsvig.netty.rest.ChannelWithRequest
 import geidsvig.netty.rest.RestUtils
+import org.jboss.netty.handler.codec.http.websocketx.CloseWebSocketFrame
 
 trait WebSocketManagerRequirements {
   val webSocketHandlerFactory: WebSocketHandlerFactory
@@ -41,8 +42,9 @@ abstract class WebSocketManager extends RestUtils {
             handler ! request
           }
           case Some(handler) => {
-            val response = createHttpResponse(HttpResponseStatus.CONFLICT, callback(request.request, "Duplicate websocket request for uuid"))
-            sendHttpResponse(request.ctx, request.request, response)
+            handler ! new CloseWebSocketFrame
+            val newHandler = webSocketHandlerFactory.createWebSocketHandler(uuid)
+            newHandler ! request
           }
         }
       }
